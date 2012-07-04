@@ -89,10 +89,51 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     RTMP_LogSetCallback(rtmp_log);
 
     RTMP_Init(r);
-    if (!RTMP_SetupURL(r, s->filename)) {
+    
+    AVal host = {0, 0};
+    AVal app = {0, 0};
+    AVal playpath = {0, 0};
+    unsigned int port = 0;
+    int protocol;
+    
+    if (!RTMP_ParseURL(s->filename, &protocol, &host, &port,
+         &playpath, &app)) {
         rc = -1;
         goto fail;
     }
+    
+    if (port == 0) {
+        if (protocol & RTMP_FEATURE_SSL)
+            port = 443;
+        else if (protocol & RTMP_FEATURE_HTTP)
+            port = 80;
+        else
+            port = 1935;
+    }
+    
+    AVal none_val = { 0, 0 };
+    AVal url = { 0, 0 };
+    
+    url.av_len = strlen(RTMPProtocolStringsLower[protocol]) + host.av_len + app.av_len + sizeof("://:65535/");
+    
+    url.av_val = (char *) av_malloc(url.av_len);
+    if (!url.av_val) {
+        rc = -1;
+        goto fail;
+    }
+        
+    url.av_len = snprintf(url.av_val, url.av_len, "%s://%.*s:%d/%.*s",
+                          RTMPProtocolStringsLower[protocol], host.av_len,
+                          host.av_val, port, app.av_len, app.av_val);
+
+    RTMP_SetupStream(r, protocol, &host, port, &none_val, &playpath,
+                     &url, &none_val, &none_val, &app, &none_val, &none_val, 0,
+                     &none_val, &none_val, 0, 0, 1, 30);
+    
+//    if (!RTMP_SetupURL(r, s->filename)) {
+//        rc = -1;
+//        goto fail;
+//    }
 
     if (flags & AVIO_FLAG_WRITE)
         RTMP_EnableWrite(r);
