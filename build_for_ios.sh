@@ -15,7 +15,7 @@ else
   exit 1
 fi
 
-ARCHS=${ARCHS:-"i386 armv6 armv7"}
+ARCHS=${ARCHS:-"armv6 armv7 i386"}
 
 for ARCH in $ARCHS
 do
@@ -81,7 +81,9 @@ do
     --disable-everything \
     --enable-librtmp \
     --enable-decoder=flv \
+    --enable-decoder=aac \
     --enable-encoder=flv \
+    --enable-encoder=aac \
     --enable-encoder=mov \
     --enable-demuxer=flv \
     --enable-demuxer=mov \
